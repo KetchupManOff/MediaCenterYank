@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Media Center Hub (static)</title>
+    <link rel="stylesheet" href="MediaCenterHub.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="header-inner">
+        <h1 class="app-title">Media Center Hub</h1>
+      </div>
+    </header>
+
+    <main id="main">
+      <section id="hub">
+        <h1>Bienvenue au Hub</h1>
+        <p>Sélectionnez un service ci‑dessous.</p>
+
+        <div class="hub-grid">
+          <button class="media-button netflix" data-url="https://www.netflix.com" title="Netflix">
+            <img src="logos/pngimg.com - netflix_PNG15.png" alt="Netflix logo" class="logo" />
+            <span class="label">Netflix</span>
+          </button>
+
+          <button class="media-button youtube" data-url="https://www.youtube.com" title="YouTube">
+            <img src="logos/icons8-youtube-50.png" alt="YouTube logo" class="logo" />
+            <span class="label">YouTube</span>
+          </button>
+
+          <button class="media-button prime" data-url="https://www.primevideo.com" title="Prime Video">
+            <img src="logos/prime.png" alt="Prime Video logo" class="logo" />
+            <span class="label">Prime Video</span>
+          </button>
+
+          <button class="media-button disney" data-url="https://www.disneyplus.com" title="Disney+">
+            <img src="logos/disney.png" alt="Disney+ logo" class="logo" />
+            <span class="label">Disney+</span>
+          </button>
+        </div>
+      </section>
+
+      <iframe id="viewer" src="" frameborder="0" sandbox="allow-scripts allow-same-origin allow-forms" style="display:none"></iframe>
+    </main>
+
+    <script>
+      const btnHub = document.getElementById('btn-hub');
+      const viewer = document.getElementById('viewer');
+      const hub = document.getElementById('hub');
+
+      function showHub() {
+        hub.style.display = 'block';
+        if (viewer) {
+          viewer.style.display = 'none';
+          viewer.src = '';
+        }
+      }
+
+      function openService(url) {
+        // Open the streaming service in a new browser tab/window
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+
+      document.querySelectorAll('.media-button').forEach(b => b.addEventListener('click', () => openService(b.dataset.url)));
+      btnHub.addEventListener('click', showHub);
+
+      showHub();
+    </script>
+  </body>
+</html>

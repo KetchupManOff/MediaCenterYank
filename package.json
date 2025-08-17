@@ -1,0 +1,16 @@
+{
+  "name": "mediacenter",
+  "version": "1.0.0",
+  "description": "Media Center Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "widevine:install": "node ./scripts/setup_widevine.js",
+    "widevine:help": "node ./scripts/setup_widevine.js --help"
+  ,"chrome:launch": "node ./scripts/launch_chrome_hub.js"
+  },
+  "devDependencies": {
+  "electron": "^26.0.0",
+  "minimist": "^1.2.8"
+  }
+}

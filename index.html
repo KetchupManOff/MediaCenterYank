@@ -9,8 +9,10 @@
   </head>
   <body>
     <header class="top-bar">
+      <div id="header-stills" class="header-stills" aria-hidden="true"></div>
       <div class="header-inner">
         <h1 class="app-title">Media Center Hub</h1>
+        <button id="btn-stills-config" class="action" title="Configurer images d'en-tête">🎬</button>
       </div>
     </header>
 
@@ -19,6 +21,24 @@
         <h1>Bienvenue au Hub</h1>
         <p>Sélectionnez un service ci‑dessous.</p>
 
+        <!-- Controls: global search, filters, quick actions -->
+        <div class="control-bar" aria-label="Barre de commande">
+          <div class="search-stack">
+            <div class="search-row">
+                  <input id="global-search" type="search" inputmode="search" autocomplete="off" placeholder="Rechercher un film, une série, un acteur…" aria-label="Recherche globale" />
+                </div>
+            <!-- filters removed: chip-group was intentionally removed to simplify the UI -->
+            <p class="help-text" aria-hidden="true">Tapez votre recherche puis cliquez sur un service pour lancer la recherche.</p>
+          </div>
+          <div class="quick-actions">
+            <button id="btn-add-fav" class="action" title="Ajouter un favori (f)">+ Favori</button>
+            <button id="btn-clear-recent" class="ghost" title="Effacer les récents">Effacer récents</button>
+          </div>
+        </div>
+
+  <div id="recent-label" class="recent-label">Récemment ouverts</div>
+  <div id="recent" class="recent" aria-label="Liens récents"></div>
+
         <div class="hub-grid">
           <button class="media-button netflix" data-url="https://www.netflix.com" title="Netflix">
             <img src="logos/pngimg.com - netflix_PNG15.png" alt="Netflix logo" class="logo" />
@@ -26,20 +46,53 @@
           </button>
 
           <button class="media-button youtube" data-url="https://www.youtube.com" title="YouTube">
-            <img src="logos/icons8-youtube-50.png" alt="YouTube logo" class="logo" />
+            <!-- inline YouTube SVG for reliable recolor and sizing -->
+            <svg viewBox=".628 .653 762.744 170.273" class="logo" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <g fill="none" fill-rule="evenodd">
+                <path d="m238.816 27.239c-2.786-10.449-11.029-18.691-21.516-21.516-18.962-5.07-95.043-5.07-95.043-5.07s-76.042 0-95.043 5.07c-10.448 2.786-18.691 11.029-21.516 21.516-5.07 18.962-5.07 58.55-5.07 58.55s0 39.589 5.07 58.551c2.786 10.449 11.029 18.691 21.516 21.516 19.001 5.07 95.043 5.07 95.043 5.07s76.081 0 95.043-5.07c10.449-2.786 18.691-11.029 21.516-21.516 5.07-18.962 5.07-58.55 5.07-58.55s0-39.589-5.07-58.551z" fill="#f00"/>
+                <path d="m97.955 122.282 63.194-36.493-63.194-36.492z" fill="#fff"/>
+                <g fill="#282828">
+                  <path d="m353.712 155.562c-4.799-3.25-8.243-8.281-10.255-15.13-2.013-6.85-3.058-15.944-3.058-27.322v-15.479c0-11.493 1.161-20.703 3.483-27.67 2.322-6.965 5.96-12.034 10.874-15.208 4.915-3.173 11.378-4.798 19.388-4.798 7.895 0 14.203 1.625 18.962 4.876 4.76 3.25 8.243 8.32 10.449 15.208 2.206 6.889 3.29 16.099 3.29 27.553v15.48c0 11.377-1.084 20.51-3.213 27.398-2.128 6.888-5.61 11.958-10.448 15.131-4.799 3.173-11.339 4.8-19.582 4.8-8.436.037-15.092-1.588-19.89-4.839zm26.972-16.717c1.316-3.483 2.013-9.172 2.013-17.027v-33.242c0-7.663-.658-13.235-2.013-16.795-1.315-3.522-3.676-5.302-7.043-5.302-3.25 0-5.534 1.78-6.888 5.302-1.316 3.521-2.012 9.132-2.012 16.795v33.242c0 7.894.619 13.583 1.896 17.027 1.277 3.483 3.599 5.224 6.966 5.224 3.405 0 5.727-1.741 7.081-5.224zm342.48-25.464v5.38c0 6.849.194 11.957.62 15.401.386 3.406 1.238 5.921 2.515 7.47 1.277 1.547 3.25 2.36 5.92 2.36 3.6 0 6.076-1.393 7.392-4.18 1.316-2.786 2.05-7.43 2.167-13.931l20.703 1.2c.117.928.155 2.205.155 3.83 0 9.869-2.709 17.221-8.088 22.097s-13.002 7.314-22.87 7.314c-11.842 0-20.123-3.715-24.883-11.145s-7.12-18.885-7.12-34.441v-18.614c0-16.021 2.476-27.67 7.39-35.06 4.915-7.353 13.351-11.03 25.31-11.03 8.242 0 14.55 1.51 18.961 4.528 4.412 3.018 7.508 7.7 9.327 14.086 1.78 6.385 2.709 15.209 2.709 26.431v18.266h-40.208zm3.057-44.89c-1.2 1.51-2.012 3.986-2.438 7.392-.426 3.405-.619 8.63-.619 15.556v7.663h17.569v-7.663c0-6.85-.232-12.035-.697-15.556-.464-3.522-1.315-6.037-2.515-7.469s-3.096-2.167-5.65-2.167c-2.554-.039-4.45.735-5.65 2.244zm-430.944 42.878-27.32-98.642h23.837l9.559 44.697c2.438 11.029 4.218 20.394 5.379 28.172h.696c.813-5.573 2.593-14.899 5.38-28.018l9.906-44.89h23.838l-27.63 98.681v47.328h-23.645zm189.08-59.324v106.613h-18.769l-2.09-13.041h-.503c-5.108 9.868-12.77 14.783-22.948 14.783-7.081 0-12.306-2.322-15.672-6.966-3.367-4.644-5.031-11.88-5.031-21.748v-79.641h23.993v78.286c0 4.76.503 8.166 1.548 10.178s2.786 3.057 5.224 3.057c2.09 0 4.102-.62 5.998-1.896 1.896-1.277 3.328-2.903 4.257-4.876v-84.75zm123.138 0v106.613h-18.769l-2.09-13.041h-.503c-5.108 9.868-12.77 14.783-22.948 14.783-7.081 0-12.306-2.322-15.672-6.966-3.367-4.644-5.031-11.88-5.031-21.748v-79.641h23.993v78.286c0 4.76.503 8.166 1.548 10.178 1.044 2.012 2.786 3.057 5.224 3.057 2.09 0 4.102-.62 5.998-1.896 1.896-1.277 3.328-2.903 4.257-4.876v-84.75z"/>
+                <path d="m549.602 32.038h-23.838v126.62h-23.49v-126.62h-23.838v-19.31h71.127v19.31zm137.34 37.072c-1.47-6.733-3.792-11.609-7.043-14.627-3.25-3.019-7.7-4.528-13.39-4.528-4.41 0-8.513 1.238-12.344 3.754-3.831 2.476-6.772 5.766-8.862 9.829h-.193v-56.19h-23.142v151.349h19.813l2.438-10.1h.504c1.857 3.599 4.643 6.424 8.358 8.513 3.715 2.09 7.818 3.135 12.345 3.135 8.127 0 14.086-3.754 17.918-11.223 3.83-7.468 5.727-19.155 5.727-35.06v-16.873c.039-11.919-.697-21.245-2.129-27.978zm-22.019 43.497c0 7.779-.31 13.854-.967 18.266-.62 4.412-1.703 7.546-3.212 9.404-1.51 1.857-3.522 2.786-6.076 2.786-1.974 0-3.792-.464-5.495-1.393-1.664-.929-3.057-2.322-4.102-4.18v-60.562c.813-2.903 2.206-5.263 4.18-7.12 1.973-1.858 4.101-2.787 6.423-2.787 2.438 0 4.334.967 5.65 2.863 1.316 1.897 2.245 5.147 2.786 9.636.504 4.528.774 10.952.774 19.31v13.777z"/>
+                </g>
+              </g>
+            </svg>
             <span class="label">YouTube</span>
           </button>
 
           <button class="media-button prime" data-url="https://www.primevideo.com" title="Prime Video">
-            <img src="logos/prime.png" alt="Prime Video logo" class="logo" />
+            <img src="logos/Amazon Prime Video.svg" alt="Jellyfin logo" class="logo" />
             <span class="label">Prime Video</span>
           </button>
 
           <button class="media-button disney" data-url="https://www.disneyplus.com" title="Disney+">
-            <img src="logos/disney.png" alt="Disney+ logo" class="logo" />
+            <img src="logos/Disney.svg" alt="Disney+ logo" class="logo" />
             <span class="label">Disney+</span>
           </button>
+
+          <button class="media-button jellyfin" data-url="http://173.179.103.100:8097" title="Jellyfin">
+            <img src="logos/jellyfin.png" alt="Jellyfin logo" class="logo" />
+            <span class="label">Jellyfin</span>
+          </button>
         </div>
+
+        <section id="favorites" class="favorites-section" aria-label="Favoris">
+          <div class="section-head">
+            <h2>Favoris</h2>
+            <div class="section-actions">
+              <button id="btn-add-fav-2" class="action">+ Ajouter</button>
+            </div>
+          </div>
+          <form id="fav-form" class="fav-form" autocomplete="off" hidden>
+            <input id="fav-name" type="text" placeholder="Nom du favori (ex: FilmCulte)" required />
+            <input id="fav-url" type="url" placeholder="URL (https://...)" required />
+            <div class="form-actions">
+              <button type="submit" class="action primary">Ajouter</button>
+              <button type="button" id="fav-cancel" class="ghost">Annuler</button>
+            </div>
+          </form>
+          <div id="favorites-grid" class="favorites-grid"></div>
+        </section>
       </section>
 
       <iframe id="viewer" src="" frameborder="0" sandbox="allow-scripts allow-same-origin allow-forms" style="display:none"></iframe>
@@ -49,6 +102,17 @@
       const btnHub = document.getElementById('btn-hub');
       const viewer = document.getElementById('viewer');
       const hub = document.getElementById('hub');
+  const qInput = document.getElementById('global-search');
+  const recentWrap = document.getElementById('recent');
+  const recentLabel = document.getElementById('recent-label');
+      const favForm = document.getElementById('fav-form');
+      const favName = document.getElementById('fav-name');
+      const favUrl = document.getElementById('fav-url');
+      const favCancel = document.getElementById('fav-cancel');
+      const favGrid = document.getElementById('favorites-grid');
+      const btnAddFav = document.getElementById('btn-add-fav');
+      const btnAddFav2 = document.getElementById('btn-add-fav-2');
+      const btnClearRecent = document.getElementById('btn-clear-recent');
 
       function showHub() {
         hub.style.display = 'block';
@@ -58,15 +122,292 @@
         }
       }
 
-      function openService(url) {
+      function openService(url, meta = {}) {
         // Open the streaming service in a new browser tab/window
         window.open(url, '_blank', 'noopener,noreferrer');
+        // track recent
+        try {
+          const recent = JSON.parse(localStorage.getItem('mc.recent') || '[]');
+          let displayName = meta.name || meta.title || url.replace(/^https?:\/\//,'');
+          if (meta.kind === 'search') {
+            const svcName = meta.serviceName || meta.name || 'Service';
+            const q = meta.query || '';
+            displayName = ` « ${q} » — ${svcName}`;
+          }
+          const entry = { name: displayName, url, ts: Date.now() };
+          const deduped = [entry, ...recent.filter(r => r.url !== url)].slice(0, 10);
+          localStorage.setItem('mc.recent', JSON.stringify(deduped));
+          renderRecent();
+        } catch {}
       }
 
-      document.querySelectorAll('.media-button').forEach(b => b.addEventListener('click', () => openService(b.dataset.url)));
-      btnHub.addEventListener('click', showHub);
+      document.querySelectorAll('.media-button').forEach(b => b.addEventListener('click', () => {
+        const svc = b.classList.contains('netflix') ? 'netflix' : b.classList.contains('youtube') ? 'youtube' : b.classList.contains('prime') ? 'prime' : b.classList.contains('disney') ? 'disney' : null;
+        const q = qInput?.value?.trim();
+        if (q && svc && SERVICES[svc]) {
+          // perform a search in the clicked service
+          openService(SERVICES[svc].search(q), { kind: 'search', query: q, service: svc, serviceName: SERVICES[svc].name });
+        } else {
+          openService(b.dataset.url, { name: b.querySelector('.label')?.textContent?.trim() });
+        }
+      }));
+      if (btnHub) btnHub.addEventListener('click', showHub);
+
+      // --- Search across services ---
+      const SERVICES = {
+        netflix: { name: 'Netflix', search: q => `https://www.netflix.com/search?q=${encodeURIComponent(q)}` },
+        youtube: { name: 'YouTube', search: q => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}` },
+        prime:   { name: 'Prime Video', search: q => `https://www.primevideo.com/search?phrase=${encodeURIComponent(q)}` },
+        disney:  { name: 'Disney+', search: q => `https://www.disneyplus.com/search?q=${encodeURIComponent(q)}` },
+      };
+
+      // With the chip-group removed, default searches should target all known services.
+      function selectedServices() {
+        if (!document.querySelector('.chip-group')) return Object.keys(SERVICES);
+        const chipGroup = document.querySelector('.chip-group');
+        const all = chipGroup.querySelector('.chip.selected[data-svc="all"]');
+        if (all) return Object.keys(SERVICES);
+        return Array.from(chipGroup.querySelectorAll('.chip.selected') || [])
+          .map(c => c.dataset.svc)
+          .filter(k => SERVICES[k]);
+      }
+
+      function doSearch() {
+        const q = qInput?.value?.trim();
+        if (!q) return;
+  const svcs = selectedServices();
+  svcs.forEach(key => openService(SERVICES[key].search(q), { name: `${SERVICES[key].name}: ${q}` , kind: 'search' }));
+      }
+
+  // chip-group removed; no filter click handling required.
+
+      // Search is triggered by clicking a service tile after typing a query.
+      // Keep Enter for submitting forms but do not auto-search across services.
+
+      // Update tile tooltips to reflect current query intention
+      const serviceButtons = Array.from(document.querySelectorAll('.media-button.netflix, .media-button.youtube, .media-button.prime, .media-button.disney'));
+      // cache base titles
+      serviceButtons.forEach(b => { b.dataset.baseTitle = b.title || b.querySelector('.label')?.textContent?.trim() || 'Service'; });
+      function updateServiceTitles() {
+        const q = qInput?.value?.trim();
+        serviceButtons.forEach(b => {
+          const svc = b.classList.contains('netflix') ? 'netflix' : b.classList.contains('youtube') ? 'youtube' : b.classList.contains('prime') ? 'prime' : 'disney';
+          const name = SERVICES[svc]?.name || b.dataset.baseTitle;
+          b.title = q ? `Rechercher « ${q} » sur ${name}` : b.dataset.baseTitle;
+        });
+      }
+      qInput?.addEventListener('input', updateServiceTitles);
+      updateServiceTitles();
+
+      // --- Favorites ---
+      function loadFavs() {
+        try { return JSON.parse(localStorage.getItem('mc.favorites') || '[]'); } catch { return []; }
+      }
+      function saveFavs(list) { localStorage.setItem('mc.favorites', JSON.stringify(list)); }
+      function showFavForm(show=true) {
+        if (!favForm) return;
+        favForm.hidden = !show;
+        if (show) favName?.focus();
+      }
+      function renderFavs() {
+        const favs = loadFavs();
+        favGrid.innerHTML = '';
+        if (!favs.length) return;
+        favs.forEach(f => {
+          const btn = document.createElement('button');
+          btn.className = 'media-button favorite-card';
+          btn.dataset.url = f.url;
+          btn.title = f.name;
+          btn.innerHTML = `
+            <div class="avatar" aria-hidden="true">${(f.name||'?').trim().charAt(0).toUpperCase()}</div>
+            <span class="label">${f.name}</span>
+            <button class="mini delete" title="Supprimer" aria-label="Supprimer">×</button>
+          `;
+          favGrid.appendChild(btn);
+        });
+      }
+      function addFav(name, url) {
+        const list = loadFavs();
+        list.unshift({ id: Date.now(), name, url });
+        saveFavs(list);
+        renderFavs();
+      }
+      function removeFavByUrl(url) {
+        const list = loadFavs().filter(f => f.url !== url);
+        saveFavs(list);
+        renderFavs();
+      }
+
+      favGrid?.addEventListener('click', (e) => {
+        const del = e.target.closest('button.mini.delete');
+        const card = e.target.closest('.favorite-card');
+        if (!card) return;
+        if (del) { removeFavByUrl(card.dataset.url); return; }
+        openService(card.dataset.url, { name: card.querySelector('.label')?.textContent });
+      });
+
+      favForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = favName.value.trim();
+        const url = favUrl.value.trim();
+        if (!name || !url) return;
+        addFav(name, url);
+        favForm.reset();
+        showFavForm(false);
+      });
+      favCancel?.addEventListener('click', () => showFavForm(false));
+      btnAddFav?.addEventListener('click', () => showFavForm(true));
+      btnAddFav2?.addEventListener('click', () => showFavForm(true));
+
+      // --- Recents ---
+      function renderRecent() {
+        const items = JSON.parse(localStorage.getItem('mc.recent') || '[]');
+        recentWrap.innerHTML = '';
+        items.slice(0, 8).forEach(r => {
+          const a = document.createElement('button');
+          a.className = 'pill';
+          a.textContent = r.name || r.url;
+          a.title = r.url;
+          a.addEventListener('click', () => openService(r.url, { name: r.name }));
+          recentWrap.appendChild(a);
+        });
+        const show = items.length > 0;
+        recentWrap.style.display = show ? 'flex' : 'none';
+        if (recentLabel) recentLabel.style.display = show ? 'block' : 'none';
+      }
+      btnClearRecent?.addEventListener('click', () => { localStorage.removeItem('mc.recent'); renderRecent(); });
 
       showHub();
+
+      // initial renders
+      renderFavs();
+      renderRecent();
+
+      // --- Shortcuts ---
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement !== qInput) { e.preventDefault(); qInput?.focus(); return; }
+        if (e.key.toLowerCase() === 'f' && !favForm?.hidden) return;
+        if (e.key.toLowerCase() === 'f') { e.preventDefault(); showFavForm(true); return; }
+        // numeric shortcuts for main services
+        const map = ['.media-button.netflix', '.media-button.youtube', '.media-button.prime', '.media-button.disney', '.media-button.jellyfin'];
+        if (/^[1-5]$/.test(e.key)) {
+          const idx = parseInt(e.key, 10) - 1;
+          const btn = document.querySelector(map[idx]);
+          btn?.click();
+        }
+      });
+
+      // --- Header stills (TMDb-powered subtle backgrounds) ---
+      (function headerStills() {
+        const container = document.getElementById('header-stills');
+  const cfgKey = 'mc.headerStills';
+  const apiKeyKey = 'mc.tmdbApiKey';
+  // hardcoded TMDb API key (local script use only)
+  const HARDCODED_TMDB_KEY = 'b10ccefb162aa058885c3516cfda3cda';
+        const defaultStills = [
+          // fallbacks if TMDb isn't configured or fetch fails
+          'https://moviestillsdb.b-cdn.net/movies/guardian_of_the_galaxy_vol_2_2017/still_1.jpg',
+          'https://moviestillsdb.b-cdn.net/movies/interstellar_2014/still_7.jpg',
+          'https://moviestillsdb.b-cdn.net/movies/inception_2010/still_3.jpg'
+        ];
+
+        function loadList() {
+          try { return JSON.parse(localStorage.getItem(cfgKey) || 'null') || defaultStills; } catch { return defaultStills; }
+        }
+        function saveList(list) { localStorage.setItem(cfgKey, JSON.stringify(list)); }
+
+        async function fetchTmdbImages(apiKey, desired = 8) {
+          if (!apiKey) return [];
+          const collected = [];
+          try {
+            // try a few random pages from 'discover' to get variety
+            const tries = 6;
+            for (let i = 0; i < tries && collected.length < desired; i++) {
+              const page = Math.floor(Math.random() * 5) + 1; // pages 1..5
+              const url = `https://api.themoviedb.org/3/discover/movie?api_key=${encodeURIComponent(apiKey)}&language=fr-FR&include_adult=false&sort_by=popularity.desc&page=${page}`;
+              const res = await fetch(url);
+              if (!res.ok) continue;
+              const data = await res.json();
+              const results = data.results || [];
+              // shuffle and pick backdrops/posters
+              results.sort(() => Math.random() - 0.5);
+              for (const r of results) {
+                // prefer backdrops which fit header aspect ratio better
+                const path = r.backdrop_path || r.poster_path;
+                if (!path) continue;
+                const size = 'w1280';
+                const full = `https://image.tmdb.org/t/p/${size}${path}`;
+                if (!collected.includes(full)) collected.push(full);
+                if (collected.length >= desired) break;
+              }
+            }
+          } catch (e) { /* silent fallback */ }
+          return collected;
+        }
+
+        let list = loadList();
+        let imgs = [];
+        let idx = -1;
+        let t = null;
+
+        function build() {
+          container.innerHTML = '';
+          imgs = list.map(u => {
+            const img = document.createElement('img');
+            img.className = 'stills-img';
+            img.src = u;
+            img.alt = '';
+            container.appendChild(img);
+            return img;
+          });
+        }
+
+        function showRandom() {
+          if (!imgs.length) return;
+          const next = Math.floor(Math.random() * imgs.length);
+          if (next === idx && imgs.length > 1) return showRandom();
+          if (idx >= 0 && imgs[idx]) imgs[idx].classList.remove('visible');
+          idx = next;
+          imgs[idx].classList.add('visible');
+          // Remove the translateX transform that was causing left-side positioning
+          imgs.forEach((im, i) => im.style.transform = `scale(${1 + (i === idx ? 0.02 : 0)})`);
+        }
+
+        async function start() {
+          if (!container) return;
+          // attempt to use TMDb: prefer stored key, fall back to the hardcoded key
+          const key = localStorage.getItem(apiKeyKey) || HARDCODED_TMDB_KEY;
+          if (key) {
+            const tm = await fetchTmdbImages(key, 10);
+            if (tm && tm.length) {
+              list = tm;
+              saveList(list);
+            }
+          }
+          build();
+          showRandom();
+          clearInterval(t);
+          t = setInterval(showRandom, 9000 + Math.floor(Math.random() * 6000));
+        }
+
+        function promptConfig() {
+          const action = prompt("Images d'en-tête — tapez:\nadd URL\nremove N (index)\nlist\nreset\nsetkey YOUR_TMDB_KEY\nclearkey", 'list');
+          if (!action) return;
+          if (action.startsWith('add ')) {
+            const url = action.slice(4).trim(); if (url) { list.unshift(url); saveList(list); start(); }
+          } else if (action.startsWith('remove ')) {
+            const n = parseInt(action.split(' ')[1], 10); if (!isNaN(n) && list[n]) { list.splice(n, 1); saveList(list); start(); }
+          } else if (action === 'reset') { list = defaultStills.slice(); saveList(list); start(); }
+          else if (action === 'list') { alert(list.map((u, i) => `${i}: ${u}`).join('\n')); }
+          else if (action.startsWith('setkey ')) { const k = action.slice(7).trim(); if (k) { localStorage.setItem(apiKeyKey, k); alert('TMDb key saved'); start(); } }
+          else if (action === 'clearkey') { localStorage.removeItem(apiKeyKey); alert('TMDb key removed'); start(); }
+        }
+
+        document.getElementById('btn-stills-config')?.addEventListener('click', promptConfig);
+
+        start();
+        window.addEventListener('beforeunload', () => clearInterval(t));
+      })();
     </script>
   </body>
 </html>

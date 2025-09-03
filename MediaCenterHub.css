@@ -154,6 +154,9 @@ body.fullscreen .top-bar { position: fixed; }
 .media-button.disney { background-color: #1057a8; } /* friendlier blue */
 /* Jellyfin: warm orange to match Jellyfin branding */
 .media-button.jellyfin { background-color: #ff8c00; }
+/* Apple TV */
+.media-button.appletv { background: linear-gradient(180deg,#0f0f0f,#222); color: #fff; }
+.media-button.appletv .logo { font-family: -apple-system, 'SF Pro', 'Helvetica Neue', Arial; font-size: 44px; line-height: 1; }
 
 webview#webview {
   position: absolute;

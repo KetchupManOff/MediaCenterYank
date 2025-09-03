@@ -70,6 +70,11 @@
             <span class="label">Disney+</span>
           </button>
 
+          <button class="media-button appletv" data-url="https://tv.apple.com" title="Apple TV+">
+            <span class="logo" aria-hidden="true"></span>
+            <span class="label">Apple TV+</span>
+          </button>
+
           <button class="media-button jellyfin" data-url="http://173.179.103.100:8097" title="Jellyfin">
             <img src="logos/jellyfin.png" alt="Jellyfin logo" class="logo" />
             <span class="label">Jellyfin</span>
@@ -158,7 +163,8 @@
         netflix: { name: 'Netflix', search: q => `https://www.netflix.com/search?q=${encodeURIComponent(q)}` },
         youtube: { name: 'YouTube', search: q => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}` },
         prime:   { name: 'Prime Video', search: q => `https://www.primevideo.com/search?phrase=${encodeURIComponent(q)}` },
-        disney:  { name: 'Disney+', search: q => `https://www.disneyplus.com/search?q=${encodeURIComponent(q)}` },
+  disney:  { name: 'Disney+', search: q => `https://www.disneyplus.com/search?q=${encodeURIComponent(q)}` },
+  appletv: { name: 'Apple TV+', search: q => `https://tv.apple.com/search?q=${encodeURIComponent(q)}` },
       };
 
       // With the chip-group removed, default searches should target all known services.
@@ -185,7 +191,7 @@
       // Keep Enter for submitting forms but do not auto-search across services.
 
       // Update tile tooltips to reflect current query intention
-      const serviceButtons = Array.from(document.querySelectorAll('.media-button.netflix, .media-button.youtube, .media-button.prime, .media-button.disney'));
+  const serviceButtons = Array.from(document.querySelectorAll('.media-button.netflix, .media-button.youtube, .media-button.prime, .media-button.disney, .media-button.appletv'));
       // cache base titles
       serviceButtons.forEach(b => { b.dataset.baseTitle = b.title || b.querySelector('.label')?.textContent?.trim() || 'Service'; });
       function updateServiceTitles() {
@@ -289,7 +295,7 @@
         if (e.key.toLowerCase() === 'f' && !favForm?.hidden) return;
         if (e.key.toLowerCase() === 'f') { e.preventDefault(); showFavForm(true); return; }
         // numeric shortcuts for main services
-        const map = ['.media-button.netflix', '.media-button.youtube', '.media-button.prime', '.media-button.disney', '.media-button.jellyfin'];
+  const map = ['.media-button.netflix', '.media-button.youtube', '.media-button.prime', '.media-button.disney', '.media-button.appletv', '.media-button.jellyfin'];
         if (/^[1-5]$/.test(e.key)) {
           const idx = parseInt(e.key, 10) - 1;
           const btn = document.querySelector(map[idx]);

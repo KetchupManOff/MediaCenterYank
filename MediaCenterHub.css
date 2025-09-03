@@ -156,7 +156,7 @@ body.fullscreen .top-bar { position: fixed; }
 .media-button.jellyfin { background-color: #ff8c00; }
 /* Apple TV */
 .media-button.appletv { background: linear-gradient(180deg,#0f0f0f,#222); color: #fff; }
-.media-button.appletv .logo { font-family: -apple-system, 'SF Pro', 'Helvetica Neue', Arial; font-size: 44px; line-height: 1; }
+.media-button.appletv .logo { height: 48px; width: auto; max-height: 64px; }
 
 webview#webview {
   position: absolute;

@@ -2,6 +2,8 @@
 // launch_chrome_hub.js
 // Creates a minimal hub HTML inside the chrome-profile directory and launches
 // Google Chrome with the provided profile, opening the hub and service tabs.
+// test!
+
 
 const fs = require('fs');
 const path = require('path');

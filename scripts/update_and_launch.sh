@@ -13,29 +13,57 @@ echo "[mc-update] Repo: $REPO_ROOT"
 
 # Helper: start the app using available runner (npm start, electron, npx)
 start_app() {
-  echo "[mc-update] Launching MediaCenter..."
-  # If there's a package.json start script, prefer npm start
+  echo "[mc-update] Launching MediaCenter (opening index.html with Chromium --kiosk preferred)..."
+  # Preferred: open index.html with Chromium in kiosk mode
+  if [ -f index.html ]; then
+    if command -v chromium >/dev/null 2>&1; then
+      nohup chromium --kiosk "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      return 0
+    fi
+    if command -v chromium-browser >/dev/null 2>&1; then
+      nohup chromium-browser --kiosk "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      return 0
+    fi
+    # fallback to system opener
+    if command -v xdg-open >/dev/null 2>&1; then
+      nohup xdg-open "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      return 0
+    fi
+    if command -v sensible-browser >/dev/null 2>&1; then
+      nohup sensible-browser "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      return 0
+    fi
+    # As a last resort, try to open with python's simple HTTP server in background
+    if command -v python3 >/dev/null 2>&1; then
+      (cd "$REPO_ROOT" && nohup python3 -m http.server 0 >/dev/null 2>&1 &) || true
+      # attempt to open localhost:8000/index.html
+      if command -v xdg-open >/dev/null 2>&1; then
+        nohup xdg-open "http://127.0.0.1:8000/index.html" >/dev/null 2>&1 &
+        return 0
+      fi
+    fi
+  fi
+
+  # Fallbacks for dev setups: prefer npm start or electron if available
   if [ -f package.json ] && grep -q "\"start\"\s*:\s*\"" package.json; then
     echo "[mc-update] Using 'npm start' (start script found)"
     npm run start --silent || { echo "[mc-update] npm start failed"; return 1; }
     return 0
   fi
 
-  # electron binary
   if command -v electron >/dev/null 2>&1; then
     echo "[mc-update] Using 'electron .'"
     electron . || { echo "[mc-update] electron . failed"; return 1; }
     return 0
   fi
 
-  # try npx electron
   if command -v npx >/dev/null 2>&1; then
     echo "[mc-update] Using 'npx electron .'"
     npx electron . || { echo "[mc-update] npx electron . failed"; return 1; }
     return 0
   fi
 
-  echo "[mc-update] Could not find a way to launch the app. Please install 'electron' or add a start script to package.json."
+  echo "[mc-update] Could not find a way to launch the app (no browser or electron)."
   return 2
 }
 

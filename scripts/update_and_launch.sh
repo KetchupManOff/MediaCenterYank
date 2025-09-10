@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Simple logging to help debug desktop/Autostart behavior
+LOG="/tmp/mc-update.log"
+echo "\n[mc-update] ---------- starting at $(date) ----------" >> "$LOG"
+# redirect all further stdout/stderr to the log (append)
+exec >>"$LOG" 2>&1
+
+# Dedicated Chromium profile for kiosk (avoid race with user's default profile)
+PROFILE_DIR="${HOME:-/home/$(whoami)}/.config/mediacenter-chromium"
+mkdir -p "$PROFILE_DIR" || true
+chown -R "$(whoami)":"$(whoami)" "$PROFILE_DIR" 2>/dev/null || true
+
 # update_and_launch.sh
 # Usage: run this from your Linux Mint session autostart or manually.
 # It will fetch from origin, compare local vs remote, pull the latest when safe,
@@ -16,29 +27,50 @@ start_app() {
   echo "[mc-update] Launching MediaCenter (opening index.html with Chromium --kiosk preferred)..."
   # Preferred: open index.html with Chromium in kiosk mode
   if [ -f index.html ]; then
+    # make sure a graphical session is ready (DISPLAY or WAYLAND)
+    WAITED=0
+    while [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ] && [ $WAITED -lt 15 ]; do
+      echo "[mc-update] Waiting for display (DISPLAY/WAYLAND) to be set... ($WAITED)";
+      sleep 1; WAITED=$((WAITED+1));
+    done
+    if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+      echo "[mc-update] Warning: no DISPLAY or WAYLAND detected after wait — continuing anyway.";
+    fi
+
     if command -v chromium >/dev/null 2>&1; then
-      nohup chromium --kiosk "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      echo "[mc-update] Launching chromium with profile $PROFILE_DIR"
+      setsid nohup chromium --kiosk --user-data-dir="$PROFILE_DIR" --disable-infobars --no-first-run --disable-translate --disable-gpu --disable-dev-shm-usage "file://$REPO_ROOT/index.html" >>"$LOG" 2>&1 &
+      sleep 2
+      PID=$(pgrep -n chromium || true)
+      echo "[mc-update] chromium launched (pid ${PID:-none})"
       return 0
     fi
     if command -v chromium-browser >/dev/null 2>&1; then
-      nohup chromium-browser --kiosk "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      echo "[mc-update] Launching chromium-browser with profile $PROFILE_DIR"
+      setsid nohup chromium-browser --kiosk --user-data-dir="$PROFILE_DIR" --disable-infobars --no-first-run --disable-translate --disable-gpu --disable-dev-shm-usage "file://$REPO_ROOT/index.html" >>"$LOG" 2>&1 &
+      sleep 2
+      PID=$(pgrep -n chromium-browser || pgrep -n chromium || true)
+      echo "[mc-update] chromium-browser launched (pid ${PID:-none})"
       return 0
     fi
     # fallback to system opener
     if command -v xdg-open >/dev/null 2>&1; then
-      nohup xdg-open "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      echo "[mc-update] Opening with xdg-open"
+      nohup xdg-open "file://$REPO_ROOT/index.html" >>"$LOG" 2>&1 &
       return 0
     fi
     if command -v sensible-browser >/dev/null 2>&1; then
-      nohup sensible-browser "file://$REPO_ROOT/index.html" >/dev/null 2>&1 &
+      echo "[mc-update] Opening with sensible-browser"
+      nohup sensible-browser "file://$REPO_ROOT/index.html" >>"$LOG" 2>&1 &
       return 0
     fi
     # As a last resort, try to open with python's simple HTTP server in background
     if command -v python3 >/dev/null 2>&1; then
-      (cd "$REPO_ROOT" && nohup python3 -m http.server 0 >/dev/null 2>&1 &) || true
+      echo "[mc-update] Starting temporary http.server for fallback"
+      (cd "$REPO_ROOT" && nohup python3 -m http.server 0 >>"$LOG" 2>&1 &) || true
       # attempt to open localhost:8000/index.html
       if command -v xdg-open >/dev/null 2>&1; then
-        nohup xdg-open "http://127.0.0.1:8000/index.html" >/dev/null 2>&1 &
+        nohup xdg-open "http://127.0.0.1:8000/index.html" >>"$LOG" 2>&1 &
         return 0
       fi
     fi

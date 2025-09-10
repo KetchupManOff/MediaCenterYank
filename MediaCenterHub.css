@@ -142,7 +142,7 @@ body.fullscreen .top-bar { position: fixed; }
 }
 
 .hub-button {
-  background-color: #b32929;
+  background-color: #555;
   color: white;
   padding: 10px 20px;
   font-size: 18px;

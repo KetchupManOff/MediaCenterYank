@@ -3,22 +3,37 @@ html, body { height: 100%; width: 100%; overflow-x: hidden; }
 * { box-sizing: border-box; }
 *::before, *::after { box-sizing: inherit; }
 
+/* Prefer local Gilroy Bold if available on the system */
+@font-face {
+  font-family: 'Gilroy';
+  src: local('Gilroy Bold'), local('Gilroy-Bold');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: Arial, sans-serif;
-  /* Cinematic layered background (keeps original dark tone) */
+  /* Rich cinematic background: deep teal/indigo base with warm top highlight */
   background:
-    radial-gradient(60% 80% at 50% -10%, rgba(255, 216, 128, 0.06), rgba(0,0,0,0) 60%),
-    radial-gradient(70% 60% at 85% 0%, rgba(64, 156, 255, 0.08), rgba(0,0,0,0) 60%),
-    linear-gradient(180deg, #0e0e0e 0%, #111 35%, #0d0d0d 100%);
+    /* soft grain texture (subtle) */
+    linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 100%) ,
+    /* warm top vignette */
+    radial-gradient(60% 40% at 50% 0%, rgba(255,200,120,0.06), rgba(0,0,0,0) 40%),
+    /* cool teal highlight on left */
+    radial-gradient(50% 60% at 10% 10%, rgba(30,140,170,0.06), rgba(0,0,0,0) 40%),
+    /* deep base gradient */
+    linear-gradient(180deg, #071426 0%, #0b1b2b 30%, #081218 60%, #05060a 100%);
+  background-blend-mode: overlay, screen, overlay, normal;
   background-attachment: fixed;
 }
 
 /* Wrapper used for uniform scaling to fit the viewport while preserving ratios */
 #ui-wrap {
   position: absolute;
-  top: 0; left: 0;
+  top: var(--header-height); left: 0;
   transform-origin: top left;
   will-change: transform, left, top;
   /* fixed logical size matches JS BASE_WIDTH/BASE_HEIGHT */
@@ -81,10 +96,10 @@ html, body { overflow: hidden; }
 }
 
 .top-bar {
-  position: relative;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
+  width: 100vw;
   background-color: #181818;
   display: flex;
   align-items: center;
@@ -107,12 +122,17 @@ html, body { overflow: hidden; }
 }
 .header-stills .stills-img {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%; object-fit: cover; object-position: center center; opacity: 0; transition: opacity 1.2s ease-in-out, transform 10s linear;
-  filter: brightness(0.55) saturate(0.9) contrast(0.95);
-  transform-origin: center center; display: block; margin: 0 auto;
+  top: 0; height: 100%;
+  /* center horizontally and show whole image when possible */
+  left: 50%;
+  width: auto; max-width: none;
+  object-fit: contain; object-position: center center; opacity: 0; transition: opacity 1.2s ease-in-out, transform 10s linear;
+  filter: brightness(0.62) saturate(0.95) contrast(0.98);
+  transform-origin: center center; display: block; margin: 0;
+  /* ensure images are above the background but behind header content */
+  transform: translateX(-50%) scale(1);
 }
-.header-stills .stills-img.visible { opacity: 0.28; transform: scale(1.03); }
+.header-stills .stills-img.visible { opacity: 0.32; transform: translateX(-50%) scale(1.02); }
 
 #btn-stills-config { margin-left: 12px; padding: 6px 10px; font-size: 16px; }
 .header-inner { position: relative; z-index: 2; }
@@ -230,7 +250,7 @@ top-bar button .logo,
 .media-button .label { margin-top: 8px; font-size: 14px; }
 
 /* Better readability for hub heading/paragraph */
-#hub h1 { margin: 0 0 6px; font-size: clamp(22px, 3.5vw, 34px); letter-spacing: 0.5px; color: #f2f2f2; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+#hub h1 { margin: 0 0 6px; font-size: clamp(22px, 3.5vw, 34px); letter-spacing: 0.5px; color: #f2f2f2; text-shadow: 0 2px 10px rgba(0,0,0,0.5); font-family: 'Gilroy', 'Cinzel', Arial, sans-serif; font-weight: 700; }
 #hub p { margin: 0 0 18px; color: #cfcfcf; opacity: 0.9; }
 
 /* Control bar */

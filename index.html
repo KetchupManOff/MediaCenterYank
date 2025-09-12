@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div id="ui-wrap">
     <header class="top-bar">
       <div id="header-stills" class="header-stills" aria-hidden="true"></div>
       <div class="header-inner">
@@ -16,6 +15,7 @@
         <button id="btn-stills-config" class="action" title="Configurer images d'en-tête">🎬</button>
       </div>
     </header>
+    <div id="ui-wrap">
 
     <main id="main">
       <section id="hub">
@@ -380,8 +380,11 @@
           if (idx >= 0 && imgs[idx]) imgs[idx].classList.remove('visible');
           idx = next;
           imgs[idx].classList.add('visible');
-          // Remove the translateX transform that was causing left-side positioning
-          imgs.forEach((im, i) => im.style.transform = `scale(${1 + (i === idx ? 0.02 : 0)})`);
+          // Preserve translateX centering and only adjust scale for subtle zoom
+          imgs.forEach((im, i) => {
+            const scale = 1 + (i === idx ? 0.02 : 0);
+            im.style.transform = `translateX(-50%) scale(${scale})`;
+          });
         }
 
         async function start() {
@@ -423,29 +426,58 @@
     <script>
       // Responsive scaling: scale the whole UI to fit the viewport while preserving ratios
       (function(){
-        const BASE_WIDTH = 1280; // design baseline width
+        const BASE_WIDTH = 1280; // design baseline width (change to 1920 if you prefer)
         const BASE_HEIGHT = 720; // design baseline height
         const wrap = document.getElementById('ui-wrap');
         if (!wrap) return;
 
-        function applyScale() {
+        // allowUpscale: set to true if you want UI to grow on large screens
+        const allowUpscale = false;
+
+        function computeScale() {
           const vw = window.innerWidth;
           const vh = window.innerHeight;
-          // compute the maximum uniform scale that fits both width and height
           const sx = vw / BASE_WIDTH;
           const sy = vh / BASE_HEIGHT;
-          const s = Math.min(sx, sy, 1); // don't upscale beyond 100%
+          return Math.min(sx, sy, allowUpscale ? Math.max(sx, sy) : 1);
+        }
+
+        function applyScale() {
+          const s = computeScale();
+          // compute the actual header height and update CSS var so #ui-wrap positions correctly
+          const header = document.querySelector('.top-bar');
+          let headerH = 0;
+          if (header) {
+            headerH = header.offsetHeight || parseInt(getComputedStyle(header).height) || 0;
+            document.documentElement.style.setProperty('--header-height', headerH + 'px');
+          }
           wrap.style.transform = `scale(${s})`;
           wrap.style.width = BASE_WIDTH + 'px';
           wrap.style.height = BASE_HEIGHT + 'px';
-          // center horizontally only; anchor to the top to keep header flush
-          wrap.style.left = Math.max(0, (vw - BASE_WIDTH * s) / 2) + 'px';
-          wrap.style.top = '0px';
+          // set top based on the actual header height (unscaled)
+          wrap.style.top = (headerH) + 'px';
+          wrap.style.left = Math.max(0, (window.innerWidth - BASE_WIDTH * s) / 2) + 'px';
         }
 
-        window.addEventListener('resize', applyScale);
-        // run once after a short delay to ensure fonts/images loaded
-        setTimeout(applyScale, 80);
+        // debounce helper to avoid spamming layout calculations
+        let resizeTimer = null;
+        function scheduleApply() {
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => { applyScale(); resizeTimer = null; }, 90);
+        }
+
+        // react to window resize, orientation and DPR changes
+        window.addEventListener('resize', scheduleApply);
+        window.addEventListener('orientationchange', scheduleApply);
+        // devicePixelRatio changes can occur on some platforms (dock/undock) — poll for changes
+        let lastDPR = window.devicePixelRatio;
+        setInterval(() => {
+          if (window.devicePixelRatio !== lastDPR) { lastDPR = window.devicePixelRatio; scheduleApply(); }
+        }, 500);
+
+        // apply on load after a short delay to allow fonts/images to settle
+        window.addEventListener('load', () => setTimeout(applyScale, 80));
+        applyScale();
       })();
     </script>
   </body>

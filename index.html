@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
   </head>
   <body>
+    <div id="ui-wrap">
     <header class="top-bar">
       <div id="header-stills" class="header-stills" aria-hidden="true"></div>
       <div class="header-inner">
@@ -106,7 +107,8 @@
       <iframe id="viewer" src="" frameborder="0" sandbox="allow-scripts allow-same-origin allow-forms" style="display:none"></iframe>
     </main>
 
-    <script>
+  </div>
+  <script>
       const btnHub = document.getElementById('btn-hub');
       const viewer = document.getElementById('viewer');
       const hub = document.getElementById('hub');
@@ -416,6 +418,34 @@
 
         start();
         window.addEventListener('beforeunload', () => clearInterval(t));
+      })();
+    </script>
+    <script>
+      // Responsive scaling: scale the whole UI to fit the viewport while preserving ratios
+      (function(){
+        const BASE_WIDTH = 1280; // design baseline width
+        const BASE_HEIGHT = 720; // design baseline height
+        const wrap = document.getElementById('ui-wrap');
+        if (!wrap) return;
+
+        function applyScale() {
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          // compute the maximum uniform scale that fits both width and height
+          const sx = vw / BASE_WIDTH;
+          const sy = vh / BASE_HEIGHT;
+          const s = Math.min(sx, sy, 1); // don't upscale beyond 100%
+          wrap.style.transform = `scale(${s})`;
+          wrap.style.width = BASE_WIDTH + 'px';
+          wrap.style.height = BASE_HEIGHT + 'px';
+          // center horizontally only; anchor to the top to keep header flush
+          wrap.style.left = Math.max(0, (vw - BASE_WIDTH * s) / 2) + 'px';
+          wrap.style.top = '0px';
+        }
+
+        window.addEventListener('resize', applyScale);
+        // run once after a short delay to ensure fonts/images loaded
+        setTimeout(applyScale, 80);
       })();
     </script>
   </body>

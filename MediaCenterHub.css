@@ -15,6 +15,21 @@ body {
   background-attachment: fixed;
 }
 
+/* Wrapper used for uniform scaling to fit the viewport while preserving ratios */
+#ui-wrap {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: top left;
+  will-change: transform, left, top;
+  /* fixed logical size matches JS BASE_WIDTH/BASE_HEIGHT */
+  width: 1280px;
+  height: 720px;
+  overflow: visible;
+}
+
+/* Ensure the document doesn't introduce scrollbars when ui-wrap is scaled down */
+html, body { overflow: hidden; }
+
 /* Theatrical title styling — golden, shiny, projector-like */
 .app-title {
   font-family: 'Cinzel', Georgia, serif;

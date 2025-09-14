@@ -24,21 +24,21 @@
 
         <!-- Controls: global search, filters, quick actions -->
         <div class="control-bar" aria-label="Barre de commande">
-          <div class="search-stack">
-            <div class="search-row">
-                  <input id="global-search" type="search" inputmode="search" autocomplete="off" placeholder="Rechercher un film, une série, un acteur…" aria-label="Recherche globale" />
-                </div>
-            <!-- filters removed: chip-group was intentionally removed to simplify the UI -->
-            <p class="help-text" aria-hidden="true">Tapez votre recherche puis cliquez sur un service pour lancer la recherche.</p>
-          </div>
-          <div class="quick-actions">
-            <button id="btn-add-fav" class="action" title="Ajouter un favori (f)">+ Favori</button>
-            <button id="btn-clear-recent" class="ghost" title="Effacer les récents">Effacer récents</button>
+          <div class="search-row">
+            <input id="global-search" type="search" inputmode="search" autocomplete="off" placeholder="Rechercher un film, une série, un acteur…" aria-label="Recherche globale" />
+            <div class="quick-actions">
+              <button id="btn-add-fav" class="action" title="Ajouter un favori (f)">+ Favori</button>
+              <button id="btn-clear-recent" class="ghost" title="Effacer les récents">Effacer récents</button>
+              <button id="btn-toggle-theme" class="ghost" title="Basculer mode sombre/clair">🌙</button>
+            </div>
           </div>
         </div>
 
   <div id="recent-label" class="recent-label">Récemment ouverts</div>
   <div id="recent" class="recent" aria-label="Liens récents"></div>
+
+  <div id="search-history-label" class="recent-label">Recherches récentes</div>
+  <div id="search-history" class="recent" aria-label="Recherches récentes"></div>
 
         <div class="hub-grid">
           <button class="media-button netflix" data-url="https://www.netflix.com" title="Netflix">
@@ -108,6 +108,10 @@
     </main>
 
   </div>
+
+  <!-- Search suggestions positioned outside of ui-wrap for proper layering -->
+  <div id="search-suggestions" class="search-suggestions" hidden></div>
+
   <script>
       const btnHub = document.getElementById('btn-hub');
       const viewer = document.getElementById('viewer');
@@ -123,6 +127,28 @@
       const btnAddFav = document.getElementById('btn-add-fav');
       const btnAddFav2 = document.getElementById('btn-add-fav-2');
       const btnClearRecent = document.getElementById('btn-clear-recent');
+      const btnToggleTheme = document.getElementById('btn-toggle-theme');
+
+      // --- Theme toggle ---
+      function loadTheme() {
+        return localStorage.getItem('mc.theme') || 'dark'; // default dark
+      }
+      function saveTheme(theme) {
+        localStorage.setItem('mc.theme', theme);
+      }
+      function applyTheme(theme) {
+        document.body.classList.toggle('light-mode', theme === 'light');
+        btnToggleTheme.textContent = theme === 'dark' ? '🌙' : '☀️';
+        btnToggleTheme.title = theme === 'dark' ? 'Basculer en mode clair' : 'Basculer en mode sombre';
+      }
+      btnToggleTheme?.addEventListener('click', () => {
+        const current = loadTheme();
+        const newTheme = current === 'dark' ? 'light' : 'dark';
+        saveTheme(newTheme);
+        applyTheme(newTheme);
+      });
+      // apply on load
+      applyTheme(loadTheme());
 
       function showHub() {
         hub.style.display = 'block';
@@ -152,10 +178,11 @@
       }
 
       document.querySelectorAll('.media-button').forEach(b => b.addEventListener('click', () => {
-        const svc = b.classList.contains('netflix') ? 'netflix' : b.classList.contains('youtube') ? 'youtube' : b.classList.contains('prime') ? 'prime' : b.classList.contains('disney') ? 'disney' : null;
+        const svc = b.classList.contains('netflix') ? 'netflix' : b.classList.contains('youtube') ? 'youtube' : b.classList.contains('prime') ? 'prime' : b.classList.contains('disney') ? 'disney' : b.classList.contains('appletv') ? 'appletv' : b.classList.contains('jellyfin') ? 'jellyfin' : null;
         const q = qInput?.value?.trim();
         if (q && svc && SERVICES[svc]) {
           // perform a search in the clicked service
+          addToSearchHistory(q);
           openService(SERVICES[svc].search(q), { kind: 'search', query: q, service: svc, serviceName: SERVICES[svc].name });
         } else {
           openService(b.dataset.url, { name: b.querySelector('.label')?.textContent?.trim() });
@@ -288,23 +315,347 @@
       }
       btnClearRecent?.addEventListener('click', () => { localStorage.removeItem('mc.recent'); renderRecent(); });
 
+      // --- Search History ---
+      const searchHistoryWrap = document.getElementById('search-history');
+      const searchHistoryLabel = document.getElementById('search-history-label');
+      function loadSearchHistory() {
+        try { return JSON.parse(localStorage.getItem('mc.searchHistory') || '[]'); } catch { return []; }
+      }
+      function saveSearchHistory(list) { localStorage.setItem('mc.searchHistory', JSON.stringify(list)); }
+      function addToSearchHistory(query) {
+        if (!query.trim()) return;
+        const history = loadSearchHistory();
+        const deduped = [query, ...history.filter(q => q !== query)].slice(0, 10);
+        saveSearchHistory(deduped);
+        renderSearchHistory();
+      }
+      function renderSearchHistory() {
+        const history = loadSearchHistory();
+        searchHistoryWrap.innerHTML = '';
+        history.forEach(q => {
+          const btn = document.createElement('button');
+          btn.className = 'pill';
+          btn.textContent = q;
+          btn.title = `Rechercher « ${q} »`;
+          btn.addEventListener('click', () => {
+            qInput.value = q;
+            updateServiceTitles();
+          });
+          searchHistoryWrap.appendChild(btn);
+        });
+        const show = history.length > 0;
+        searchHistoryWrap.style.display = show ? 'flex' : 'none';
+        if (searchHistoryLabel) searchHistoryLabel.style.display = show ? 'block' : 'none';
+      }
+
       showHub();
 
       // initial renders
       renderFavs();
       renderRecent();
+      renderSearchHistory();
+
+      // --- Search Suggestions ---
+      const suggestionsContainer = document.getElementById('search-suggestions');
+      let suggestionsTimeout;
+
+      async function fetchSuggestions(query) {
+        if (!query || query.length < 2) {
+          suggestionsContainer.innerHTML = '';
+          suggestionsContainer.hidden = true;
+          return;
+        }
+
+        try {
+          const apiKey = 'b10ccefb162aa058885c3516cfda3cda'; // Same key used for header images
+          
+          // Multi-language search: prioritize original language, include both French and English
+          const queries = [
+            // Primary search in original language detection mode
+            `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&include_adult=false&page=1`,
+            // Secondary search in French
+            `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=fr-FR&include_adult=false&page=1`
+          ];
+
+          // Fetch from both endpoints and merge results
+          const [englishResponse, frenchResponse] = await Promise.all(
+            queries.map(url => fetch(url).then(res => res.json()).catch(() => ({ results: [] })))
+          );
+
+          // Combine and deduplicate results, prioritizing by original language
+          const allResults = [...(englishResponse.results || []), ...(frenchResponse.results || [])];
+          const uniqueResults = [];
+          const seenIds = new Set();
+
+          for (const item of allResults) {
+            if (!seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              uniqueResults.push(item);
+            }
+          }
+
+          if (uniqueResults.length === 0) {
+            suggestionsContainer.innerHTML = '';
+            suggestionsContainer.hidden = true;
+            return;
+          }
+
+          const suggestions = uniqueResults.slice(0, 5); // Limit to 5 suggestions
+          suggestionsContainer.innerHTML = '';
+
+          // Process suggestions sequentially to handle async calls properly
+          for (const item of suggestions) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'search-suggestion-item';
+
+            const mediaType = item.media_type === 'movie' ? 'Film' : item.media_type === 'tv' ? 'Série' : 'Contenu';
+            const year = item.release_date ? new Date(item.release_date).getFullYear() :
+                       item.first_air_date ? new Date(item.first_air_date).getFullYear() : '';
+
+            // Fetch watch providers for Canada
+            let availablePlatforms = [];
+            try {
+              const providersUrl = `https://api.themoviedb.org/3/${item.media_type}/${item.id}/watch/providers?api_key=${apiKey}`;
+              const providersRes = await fetch(providersUrl);
+              const providersData = await providersRes.json();
+              
+              const canadaProviders = providersData.results?.CA;
+              if (canadaProviders) {
+                const allProviders = [
+                  ...(canadaProviders.flatrate || []),
+                  ...(canadaProviders.rent || []),
+                  ...(canadaProviders.buy || [])
+                ];
+                
+                // Map provider IDs to our platforms (updated with correct Disney+ ID)
+                const providerMap = {
+                  8: 'netflix',     // Netflix
+                  337: 'youtube',   // YouTube Movies  
+                  119: 'youtube',   // YouTube Premium (additional)
+                  3: 'prime',       // Amazon Prime Video
+                  9: 'prime',       // Amazon Video (additional)
+                  390: 'disney',    // Disney Plus
+                  337: 'disney',    // Disney+ (additional region variant)
+                  350: 'appletv',   // Apple TV
+                  2: 'appletv'      // Apple iTunes (additional)
+                };
+                
+                availablePlatforms = allProviders
+                  .map(provider => providerMap[provider.provider_id])
+                  .filter(platform => platform);
+              }
+            } catch (error) {
+              console.warn('Could not fetch providers for', item.title || item.name);
+            }
+
+            // Always include YouTube and Jellyfin as they're search-based, but mark as uncertain
+            if (!availablePlatforms.includes('youtube')) availablePlatforms.push('youtube');
+            if (!availablePlatforms.includes('jellyfin')) availablePlatforms.push('jellyfin');
+
+            // Check YouTube for full content availability
+            let youtubeStatus = 'uncertain'; // uncertain, available, unavailable
+            try {
+              // Advanced heuristics for YouTube content detection
+              const title = (item.title || item.name).toLowerCase();
+              const isMovie = item.media_type === 'movie';
+              const currentYear = new Date().getFullYear();
+              const contentYear = year || currentYear;
+              
+              // Movies older than 5 years are more likely to be available in full on YouTube
+              const isOlderContent = currentYear - contentYear > 5;
+              
+              // Independent or lesser-known films are more likely to be on YouTube
+              const popularity = item.popularity || 0;
+              const isLessPopular = popularity < 20;
+              
+              // Check for documentary or educational content indicators
+              const isDocumentary = title.includes('documentaire') || title.includes('documentary');
+              
+              // Public domain or classic films
+              const isClassic = contentYear < 1970;
+              
+              // Calculate YouTube likelihood score
+              let youtubeScore = 0;
+              if (isOlderContent) youtubeScore += 2;
+              if (isLessPopular) youtubeScore += 2;
+              if (isDocumentary) youtubeScore += 3;
+              if (isClassic) youtubeScore += 4;
+              if (!isMovie) youtubeScore += 1; // TV shows sometimes have episodes
+              
+              // Determine status based on score
+              if (youtubeScore >= 4) {
+                youtubeStatus = 'available'; // High confidence
+              } else if (youtubeScore >= 2) {
+                youtubeStatus = 'uncertain'; // Medium confidence
+              } else {
+                youtubeStatus = 'uncertain'; // Low confidence but still searchable
+              }
+              
+            } catch (error) {
+              youtubeStatus = 'uncertain';
+            }
+
+            const platformButtons = [
+              { id: 'netflix', name: 'Netflix', status: availablePlatforms.includes('netflix') ? 'available' : 'unavailable' },
+              { id: 'youtube', name: 'YouTube', status: youtubeStatus },
+              { id: 'prime', name: 'Prime', status: availablePlatforms.includes('prime') ? 'available' : 'unavailable' },
+              { id: 'disney', name: 'Disney+', status: availablePlatforms.includes('disney') ? 'available' : 'unavailable' },
+              { id: 'appletv', name: 'Apple TV', status: availablePlatforms.includes('appletv') ? 'available' : 'unavailable' },
+              { id: 'jellyfin', name: 'Jellyfin', status: 'uncertain' } // Always uncertain as it depends on local content
+            ];
+
+            const availableHtml = platformButtons
+              .filter(platform => platform.status === 'available')
+              .map(platform => `<button class="mini-btn available" data-platform="${platform.id}" data-query="${item.title || item.name}" title="Confirmé disponible au Canada">${platform.name}</button>`)
+              .join('');
+
+            const uncertainHtml = platformButtons
+              .filter(platform => platform.status === 'uncertain')
+              .map(platform => {
+                let tooltip = '';
+                if (platform.id === 'jellyfin') {
+                  tooltip = 'Dépend de votre collection locale';
+                } else if (platform.id === 'youtube') {
+                  tooltip = 'Peut contenir le film complet - vérification recommandée';
+                } else {
+                  tooltip = 'Disponibilité incertaine - vérification requise';
+                }
+                return `<button class="mini-btn uncertain" data-platform="${platform.id}" data-query="${item.title || item.name}" title="${tooltip}">${platform.name}</button>`;
+              })
+              .join('');
+
+            // Add unavailable platforms as disabled buttons
+            const unavailableHtml = platformButtons
+              .filter(platform => platform.status === 'unavailable')
+              .map(platform => `<button class="mini-btn unavailable" disabled title="Non disponible au Canada">${platform.name}</button>`)
+              .join('');
+
+            itemDiv.innerHTML = `
+              <div class="suggestion-info">
+                <div class="suggestion-title">${item.title || item.name}</div>
+                <div class="suggestion-meta">${mediaType}${year ? ` • ${year}` : ''}</div>
+              </div>
+              <div class="suggestion-platforms">
+                ${availableHtml}
+                ${uncertainHtml}
+                ${unavailableHtml}
+              </div>
+            `;
+
+            suggestionsContainer.appendChild(itemDiv);
+          }
+
+          showSuggestions();
+        } catch (error) {
+          console.error('Error fetching suggestions:', error);
+          suggestionsContainer.innerHTML = '';
+          suggestionsContainer.hidden = true;
+        }
+      }
+
+      function showSuggestions() {
+        if (suggestionsContainer.children.length > 0) {
+          const rect = qInput.getBoundingClientRect();
+          suggestionsContainer.style.left = rect.left + 'px';
+          suggestionsContainer.style.top = (rect.bottom + 4) + 'px';
+          suggestionsContainer.style.width = rect.width + 'px';
+          suggestionsContainer.hidden = false;
+        }
+      }
+
+      function showSuggestions() {
+        if (suggestionsContainer.children.length > 0) {
+          const rect = qInput.getBoundingClientRect();
+          suggestionsContainer.style.left = rect.left + 'px';
+          suggestionsContainer.style.top = (rect.bottom + 4) + 'px';
+          suggestionsContainer.style.width = rect.width + 'px';
+          suggestionsContainer.hidden = false;
+        }
+      }
+
+      function hideSuggestions() {
+        suggestionsContainer.hidden = true;
+      }
+
+      qInput?.addEventListener('input', (e) => {
+        clearTimeout(suggestionsTimeout);
+        const query = e.target.value.trim();
+        suggestionsTimeout = setTimeout(() => fetchSuggestions(query), 300); // Debounce
+      });
+
+      qInput?.addEventListener('blur', () => {
+        // Delay hiding to allow clicks on suggestions
+        setTimeout(hideSuggestions, 150);
+      });
+
+      qInput?.addEventListener('focus', () => {
+        if (qInput.value.trim().length >= 2) {
+          fetchSuggestions(qInput.value.trim());
+        }
+      });
+
+      // Handle clicks on suggestion platform buttons
+      suggestionsContainer?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mini-btn');
+        if (!btn) return;
+
+        const platform = btn.dataset.platform;
+        const query = btn.dataset.query;
+
+        if (platform && query && SERVICES[platform]) {
+          addToSearchHistory(query);
+          openService(SERVICES[platform].search(query), {
+            kind: 'search',
+            query: query,
+            service: platform,
+            serviceName: SERVICES[platform].name
+          });
+          hideSuggestions();
+          qInput.value = query;
+          updateServiceTitles();
+        }
+      });
 
       // --- Shortcuts ---
+      let selectedIndex = -1;
+      const navigableButtons = Array.from(document.querySelectorAll('.media-button:not(.favorite-card)'));
+      function updateSelection() {
+        navigableButtons.forEach((btn, i) => btn.classList.toggle('selected', i === selectedIndex));
+      }
       document.addEventListener('keydown', (e) => {
         if (e.key === '/' && document.activeElement !== qInput) { e.preventDefault(); qInput?.focus(); return; }
         if (e.key.toLowerCase() === 'f' && !favForm?.hidden) return;
         if (e.key.toLowerCase() === 'f') { e.preventDefault(); showFavForm(true); return; }
         // numeric shortcuts for main services
-  const map = ['.media-button.netflix', '.media-button.youtube', '.media-button.prime', '.media-button.disney', '.media-button.appletv', '.media-button.jellyfin'];
-        if (/^[1-5]$/.test(e.key)) {
+        const map = ['.media-button.netflix', '.media-button.youtube', '.media-button.prime', '.media-button.disney', '.media-button.appletv', '.media-button.jellyfin'];
+        if (/^[1-6]$/.test(e.key)) {
           const idx = parseInt(e.key, 10) - 1;
           const btn = document.querySelector(map[idx]);
           btn?.click();
+          return;
+        }
+        // arrow navigation
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = (selectedIndex + 1) % navigableButtons.length;
+          updateSelection();
+          return;
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = selectedIndex <= 0 ? navigableButtons.length - 1 : selectedIndex - 1;
+          updateSelection();
+          return;
+        }
+        if (e.key === 'Enter' && selectedIndex >= 0) {
+          e.preventDefault();
+          navigableButtons[selectedIndex]?.click();
+          return;
+        }
+        if (e.key === 'Escape') {
+          selectedIndex = -1;
+          updateSelection();
+          return;
         }
       });
 

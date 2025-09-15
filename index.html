@@ -394,13 +394,47 @@
             }
           }
 
-          if (uniqueResults.length === 0) {
+          // Check if we found any actors and fetch their filmography
+          const actors = uniqueResults.filter(item => item.media_type === 'person').slice(0, 2);
+          let actorMovies = [];
+          
+          if (actors.length > 0) {
+            try {
+              for (const actor of actors) {
+                const creditsUrl = `https://api.themoviedb.org/3/person/${actor.id}/combined_credits?api_key=${apiKey}&language=en-US`;
+                const creditsResponse = await fetch(creditsUrl);
+                const creditsData = await creditsResponse.json();
+                
+                if (creditsData.cast) {
+                  // Get top 3 most popular works for this actor
+                  const topWorks = creditsData.cast
+                    .filter(work => work.poster_path && (work.media_type === 'movie' || work.media_type === 'tv'))
+                    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+                    .slice(0, 3)
+                    .map(work => ({
+                      ...work,
+                      actor_name: actor.name,
+                      actor_id: actor.id
+                    }));
+                  
+                  actorMovies.push(...topWorks);
+                }
+              }
+            } catch (error) {
+              console.warn('Could not fetch actor filmography:', error);
+            }
+          }
+
+          // Combine regular search results with actor filmography
+          const combinedResults = [...uniqueResults.filter(item => item.media_type !== 'person'), ...actorMovies];
+
+          if (combinedResults.length === 0) {
             suggestionsContainer.innerHTML = '';
             suggestionsContainer.hidden = true;
             return;
           }
 
-          const suggestions = uniqueResults.slice(0, 5); // Limit to 5 suggestions
+          const suggestions = combinedResults.slice(0, 5); // Limit to 5 suggestions
           suggestionsContainer.innerHTML = '';
 
           // Process suggestions sequentially to handle async calls properly
@@ -411,7 +445,12 @@
             const mediaType = item.media_type === 'movie' ? 'Film' : item.media_type === 'tv' ? 'Série' : 'Contenu';
             const year = item.release_date ? new Date(item.release_date).getFullYear() :
                        item.first_air_date ? new Date(item.first_air_date).getFullYear() : '';
-
+            
+            // Check if this is from an actor search
+            const isActorWork = item.actor_name;
+            const displayTitle = item.title || item.name;
+            const actorInfo = isActorWork ? ` • avec ${item.actor_name}` : '';
+            
             // Fetch watch providers for Canada
             let availablePlatforms = [];
             try {
@@ -532,8 +571,8 @@
 
             itemDiv.innerHTML = `
               <div class="suggestion-info">
-                <div class="suggestion-title">${item.title || item.name}</div>
-                <div class="suggestion-meta">${mediaType}${year ? ` • ${year}` : ''}</div>
+                <div class="suggestion-title">${displayTitle}</div>
+                <div class="suggestion-meta">${mediaType}${year ? ` • ${year}` : ''}${actorInfo}</div>
               </div>
               <div class="suggestion-platforms">
                 ${availableHtml}

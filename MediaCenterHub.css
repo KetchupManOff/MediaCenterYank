@@ -99,6 +99,18 @@ body.light-mode .media-button.jellyfin {
   border-color: #f97316;
   box-shadow: 0 4px 12px rgba(255,140,0,0.3);
 }
+body.light-mode .media-button.twitch {
+  background: linear-gradient(135deg, #9146ff 0%, #6441a5 100%);
+  color: #fff;
+  border-color: #7c3aed;
+  box-shadow: 0 4px 12px rgba(145,70,255,0.3);
+}
+body.light-mode .media-button.google {
+  background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335);
+  color: #fff;
+  border-color: #4285f4;
+  box-shadow: 0 4px 12px rgba(66,133,244,0.3);
+}
 body.light-mode .media-button.appletv {
   background: linear-gradient(135deg, #333 0%, #666 50%, #333 100%);
   color: #fff;
@@ -456,6 +468,10 @@ body.fullscreen .top-bar { position: fixed; }
 .media-button.disney { background-color: #1057a8; } /* friendlier blue */
 /* Jellyfin: warm orange to match Jellyfin branding */
 .media-button.jellyfin { background-color: #ff8c00; }
+/* Twitch: purple brand color */
+.media-button.twitch { background-color: #9146ff; }
+/* Google */
+.media-button.google { background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335); }
 /* Apple TV */
 .media-button.appletv { background: linear-gradient(180deg,#0f0f0f,#222); color: #fff; }
 .media-button.appletv .logo { height: 48px; width: auto; max-height: 64px; }

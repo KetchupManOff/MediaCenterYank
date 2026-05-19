@@ -126,6 +126,23 @@
   <!-- Search suggestions positioned outside of ui-wrap for proper layering -->
   <div id="search-suggestions" class="search-suggestions" hidden></div>
 
+  <!-- Version update notification banner -->
+  <div id="update-banner" role="alert" aria-live="polite">
+    <div class="update-banner-inner">
+      <span class="update-icon">🔄</span>
+      <div class="update-text">
+        <strong>Nouvelle version disponible</strong>
+        <span class="update-hashes">
+          <code id="update-local-hash"></code> → <code id="update-remote-hash"></code>
+        </span>
+      </div>
+      <div class="update-actions">
+        <button id="btn-update-install" class="action primary">Installer &amp; Redémarrer</button>
+        <button id="btn-update-dismiss" class="ghost">Plus tard</button>
+      </div>
+    </div>
+  </div>
+
   <script>
       const btnHub = document.getElementById('btn-hub');
       const viewer = document.getElementById('viewer');
@@ -839,6 +856,113 @@
         window.addEventListener('orientationchange', updateHeaderHeight);
         window.addEventListener('load', () => setTimeout(updateHeaderHeight, 80));
         updateHeaderHeight();
+      })();
+    </script>
+
+    <script>
+      // ── Built-in version checker ──
+      // Works in two modes:
+      //   • Standalone (plain browser): window.__STANDALONE_HASH__ is baked in at
+      //     build time; updates are delivered by downloading the latest pre-built
+      //     standalone HTML from GitHub raw.
+      //   • Electron (nodeIntegration: true): reads hash via git and pulls via git pull.
+      (function versionChecker() {
+        const GITHUB_API     = 'https://api.github.com/repos/KetchupManOff/MediaCenterYank/commits/main';
+        const STANDALONE_RAW = 'https://raw.githubusercontent.com/KetchupManOff/MediaCenterYank/main/MediaCenter-standalone.html';
+        const banner     = document.getElementById('update-banner');
+        const btnInstall = document.getElementById('btn-update-install');
+        const btnDismiss = document.getElementById('btn-update-dismiss');
+
+        function isStandalone() {
+          return typeof window.__STANDALONE_HASH__ === 'string' && window.__STANDALONE_HASH__ !== '';
+        }
+
+        function getLocalHash() {
+          // Standalone build: hash baked in by build script
+          if (isStandalone()) return window.__STANDALONE_HASH__;
+          // Electron mode (nodeIntegration: true)
+          try {
+            const { execSync } = require('child_process');
+            const path = require('path');
+            return execSync('git rev-parse HEAD', { cwd: path.join(__dirname), timeout: 5000 })
+              .toString().trim();
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function showBanner(localShort, remoteShort) {
+          if (!banner) return;
+          document.getElementById('update-local-hash').textContent = localShort;
+          document.getElementById('update-remote-hash').textContent = remoteShort;
+          banner.classList.add('visible');
+        }
+
+        async function checkForUpdate() {
+          const localHash = getLocalHash();
+          if (!localHash) return; // not running in Electron with Node.js access
+
+          try {
+            const res = await fetch(GITHUB_API, {
+              headers: { 'Accept': 'application/vnd.github.v3+json' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const remoteHash = data && data.sha;
+            if (remoteHash && remoteHash !== localHash) {
+              showBanner(localHash.slice(0, 7), remoteHash.slice(0, 7));
+            }
+          } catch (e) {
+            console.warn('[version-check] Could not reach GitHub:', e.message);
+          }
+        }
+
+        btnInstall?.addEventListener('click', async () => {
+          btnInstall.disabled = true;
+          if (isStandalone()) {
+            // Standalone mode: fetch latest pre-built file and trigger download
+            btnInstall.textContent = 'Téléchargement…';
+            try {
+              const res = await fetch(STANDALONE_RAW, { cache: 'no-store' });
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'MediaCenter-standalone.html';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+              btnInstall.textContent = '✓ Téléchargé — remplacez ce fichier et rouvrez';
+            } catch (e) {
+              console.error('[version-check] Download failed:', e.message);
+              btnInstall.textContent = '✗ Échec — voir console';
+              btnInstall.disabled = false;
+            }
+          } else {
+            // Electron mode: git pull + reload
+            btnInstall.textContent = 'Mise à jour en cours…';
+            try {
+              const { execSync } = require('child_process');
+              const path = require('path');
+              execSync('git pull', { cwd: path.join(__dirname), timeout: 30000 });
+              btnInstall.textContent = '✓ Redémarrage…';
+              setTimeout(() => location.reload(), 800);
+            } catch (e) {
+              console.error('[version-check] git pull failed:', e.message);
+              btnInstall.textContent = '✗ Échec — voir console';
+              btnInstall.disabled = false;
+            }
+          }
+        });
+
+        btnDismiss?.addEventListener('click', () => {
+          banner?.classList.remove('visible');
+        });
+
+        // Delay the first check so startup is not blocked
+        setTimeout(checkForUpdate, 3000);
       })();
     </script>
   </body>

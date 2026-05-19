@@ -5,7 +5,7 @@
  * be opened directly in any browser without Electron or a local server.
  *
  * What it does:
- *   1. Reads the current git commit hash and bakes it into window.__STANDALONE_HASH__
+ *   1. Reads the version from package.json and bakes it into window.__STANDALONE_VERSION__
  *   2. Inlines MediaCenterHub.css as a <style> block
  *   3. Base64-encodes every local logo referenced by <img src="logos/...">
  *   4. Writes the result to MediaCenter-standalone.html at the repo root
@@ -20,20 +20,18 @@
 
 const fs   = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const OUT  = path.join(ROOT, 'MediaCenter-standalone.html');
 
-// ── 1. Git hash ────────────────────────────────────────────────────────────
-let hash;
-try {
-  hash = execSync('git rev-parse HEAD', { cwd: ROOT }).toString().trim();
-} catch (e) {
-  console.error('ERROR: Could not read git hash. Make sure you are inside a git repo.');
+// ── 1. Version from package.json ──────────────────────────────────────────
+const pkg     = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+const version = pkg.version;
+if (!version) {
+  console.error('ERROR: package.json has no "version" field.');
   process.exit(1);
 }
-console.log(`[build] git hash: ${hash.slice(0, 7)}`);
+console.log(`[build] version: ${version}`);
 
 // ── 2. Read source files ───────────────────────────────────────────────────
 let html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -77,10 +75,10 @@ for (const filename of logoRefs) {
   console.log(`[build] embedded logo: ${filename} (${(data.length / 1024).toFixed(1)} KB)`);
 }
 
-// ── 5. Inject standalone hash right after <head> ──────────────────────────
+// ── 5. Inject standalone version right after <head> ─────────────────────
 html = html.replace(
   '<head>',
-  `<head>\n    <script>window.__STANDALONE_HASH__ = '${hash}';</script>`
+  `<head>\n    <script>window.__STANDALONE_VERSION__ = '${version}';</script>`
 );
 
 // ── 6. Update <title> ─────────────────────────────────────────────────────
@@ -94,5 +92,5 @@ fs.writeFileSync(OUT, html, 'utf8');
 
 const sizeKB = (fs.statSync(OUT).size / 1024).toFixed(1);
 console.log(`[build] ✓  MediaCenter-standalone.html written (${sizeKB} KB)`);
-console.log(`[build]    Hash baked in: ${hash}`);
+console.log(`[build]    Version baked in: v${version}`);
 console.log(`[build]    Open in Chrome: open MediaCenter-standalone.html`);

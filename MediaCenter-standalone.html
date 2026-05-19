@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
   <head>
-    <script>window.__STANDALONE_HASH__ = '8ca7f9f2a344c72b14bf5f6f5f61837066d3d791';</script>
+    <script>window.__STANDALONE_VERSION__ = '1.0.0';</script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Media Center Hub</title>
@@ -1586,30 +1586,29 @@ body.light-mode .update-hashes code { background: rgba(0,0,0,0.15); color: #bfdb
     <script>
       // ── Built-in version checker ──
       // Works in two modes:
-      //   • Standalone (plain browser): window.__STANDALONE_HASH__ is baked in at
-      //     build time; updates are delivered by downloading the latest pre-built
-      //     standalone HTML from GitHub raw.
-      //   • Electron (nodeIntegration: true): reads hash via git and pulls via git pull.
+      //   • Standalone (plain browser): window.__STANDALONE_VERSION__ is baked in at
+      //     build time; compared against the latest GitHub release tag. Updates are
+      //     delivered by downloading the latest release asset directly.
+      //   • Electron (nodeIntegration: true): reads version from package.json and
+      //     compares against the latest GitHub release tag.
       (function versionChecker() {
-        const GITHUB_API     = 'https://api.github.com/repos/KetchupManOff/MediaCenterYank/commits/main';
-        const STANDALONE_RAW = 'https://raw.githubusercontent.com/KetchupManOff/MediaCenterYank/main/MediaCenter-standalone.html';
+        const GITHUB_RELEASES_API = 'https://api.github.com/repos/KetchupManOff/MediaCenterYank/releases/latest';
+        const STANDALONE_DOWNLOAD = 'https://github.com/KetchupManOff/MediaCenterYank/releases/latest/download/MediaCenter-standalone.html';
         const banner     = document.getElementById('update-banner');
         const btnInstall = document.getElementById('btn-update-install');
         const btnDismiss = document.getElementById('btn-update-dismiss');
 
         function isStandalone() {
-          return typeof window.__STANDALONE_HASH__ === 'string' && window.__STANDALONE_HASH__ !== '';
+          return typeof window.__STANDALONE_VERSION__ === 'string' && window.__STANDALONE_VERSION__ !== '';
         }
 
-        function getLocalHash() {
-          // Standalone build: hash baked in by build script
-          if (isStandalone()) return window.__STANDALONE_HASH__;
-          // Electron mode (nodeIntegration: true)
+        function getLocalVersion() {
+          // Standalone build: version baked in by build script
+          if (isStandalone()) return window.__STANDALONE_VERSION__;
+          // Electron mode: read from package.json
           try {
-            const { execSync } = require('child_process');
             const path = require('path');
-            return execSync('git rev-parse HEAD', { cwd: path.join(__dirname), timeout: 5000 })
-              .toString().trim();
+            return require(path.join(__dirname, 'package.json')).version;
           } catch (e) {
             return null;
           }
@@ -1623,18 +1622,19 @@ body.light-mode .update-hashes code { background: rgba(0,0,0,0.15); color: #bfdb
         }
 
         async function checkForUpdate() {
-          const localHash = getLocalHash();
-          if (!localHash) return; // not running in Electron with Node.js access
+          const localVersion = getLocalVersion();
+          if (!localVersion) return;
 
           try {
-            const res = await fetch(GITHUB_API, {
+            const res = await fetch(GITHUB_RELEASES_API, {
               headers: { 'Accept': 'application/vnd.github.v3+json' }
             });
             if (!res.ok) return;
             const data = await res.json();
-            const remoteHash = data && data.sha;
-            if (remoteHash && remoteHash !== localHash) {
-              showBanner(localHash.slice(0, 7), remoteHash.slice(0, 7));
+            const remoteTag     = data && data.tag_name;          // e.g. 'v1.0.0'
+            const remoteVersion = remoteTag ? remoteTag.replace(/^v/, '') : null;
+            if (remoteVersion && remoteVersion !== localVersion) {
+              showBanner(localVersion, remoteVersion);
             }
           } catch (e) {
             console.warn('[version-check] Could not reach GitHub:', e.message);
@@ -1647,7 +1647,7 @@ body.light-mode .update-hashes code { background: rgba(0,0,0,0.15); color: #bfdb
             // Standalone mode: fetch latest pre-built file and trigger download
             btnInstall.textContent = 'Téléchargement…';
             try {
-              const res = await fetch(STANDALONE_RAW, { cache: 'no-store' });
+              const res = await fetch(STANDALONE_DOWNLOAD, { cache: 'no-store' });
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
               const blob = await res.blob();
               const url = URL.createObjectURL(blob);
